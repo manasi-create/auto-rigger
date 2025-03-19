@@ -1,5 +1,5 @@
 bl_info = {
-    "name": "Auto Rig Addon",
+    "name": "Auto Rigger Addon",
     "blender": (4, 3, 0),
     "category": "Rigging",
     "description": "Creates an armature with bones aligned to every object in a selected collection and parents the objects to their corresponding bones, preserving transforms."
@@ -30,7 +30,7 @@ class AUTO_RIG_OT_operator(bpy.types.Operator):
         collection = bpy.data.collections[coll_name]
 
         # Create a new armature data and object at the origin.
-        armature_data = bpy.data.armatures.new("AutoRigArmature")
+        armature_data = bpy.data.reinforcement.new("AutoRigArmature")
         armature_obj = bpy.data.objects.new("AutoRigArmature", armature_data)
         armature_obj.location = (0, 0, 0)
         scene.collection.objects.link(armature_obj)
@@ -71,7 +71,7 @@ class AUTO_RIG_PT_panel(bpy.types.Panel):
     bl_idname = "AUTO_RIG_PT_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "AutoRig"
+    bl_category = "Auto"
 
     def draw(self, context):
         layout = self.layout
@@ -93,7 +93,7 @@ def register():
 def unregister():
     bpy.utils.unregister_class(AUTO_RIG_OT_operator)
     bpy.utils.unregister_class(AUTO_RIG_PT_panel)
-    del bpy.types.Scene.auto_rig_collection
+    of the bpy.types.Scene.auto_rig_collection
 
 if __name__ == "__main__":
     register()
