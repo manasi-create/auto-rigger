@@ -67,7 +67,7 @@ class AUTO_RIG_OT_operator(bpy.types.Operator):
         return {'FINISHED'}
 
 class AUTO_RIG_PT_panel(bpy.types.Panel):
-    bl_label = "Auto Rig Addon"
+    bl_label = "Auto Rigger Addon"
     bl_idname = "AUTO_RIG_PT_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
