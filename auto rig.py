@@ -1,18 +1,15 @@
 bl_info = {
     "name": "Auto Rig Addon",
-    "blender": (4, 3, 0),
+    "blender": (4, 4, 0),
     "category": "Rigging",
-    "description": "Creates an armature with bones aligned to every object in a selected collection and parents the objects to their corresponding bones, preserving transforms."
+    "description": "Creates an armature with bones aligned to every object in a selected collection and parents the objects to their corresponding bones while preserving transforms."
 }
 
 import bpy
 from mathutils import Vector
 
 def get_collection_items(self, context):
-    items = []
-    for coll in bpy.data.collections:
-        items.append((coll.name, coll.name, ""))
-    return items
+    return [(coll.name, coll.name, "") for coll in bpy.data.collections]
 
 class AUTO_RIG_OT_operator(bpy.types.Operator):
     bl_idname = "object.auto_rig_operator"
@@ -21,49 +18,46 @@ class AUTO_RIG_OT_operator(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        coll_name = scene.auto_rig_collection
+        coll_ref = scene.auto_rig_collection
         
-        if coll_name not in bpy.data.collections:
+        if not coll_ref or not coll_ref.name in bpy.data.collections:
             self.report({'ERROR'}, "Collection not found")
             return {'CANCELLED'}
             
-        collection = bpy.data.collections[coll_name]
+        collection = bpy.data.collections[coll_ref.name]
 
-        # Create a new armature data and object at the origin.
+        # Create armature
         armature_data = bpy.data.armatures.new("AutoRigArmature")
         armature_obj = bpy.data.objects.new("AutoRigArmature", armature_data)
         armature_obj.location = (0, 0, 0)
         scene.collection.objects.link(armature_obj)
         
-        # Set the armature as active and switch to Edit mode to create bones.
+        # Make active and enter edit mode
         bpy.context.view_layer.objects.active = armature_obj
         bpy.ops.object.mode_set(mode='EDIT')
         edit_bones = armature_obj.data.edit_bones
         
-        # Get the inverse of the armature's world matrix.
+        # Get inverse of armature's world matrix
         inv_matrix = armature_obj.matrix_world.inverted()
         
-        # Create a bone for each object in the selected collection.
+        # Create bones
         for obj in collection.objects:
             bone = edit_bones.new(obj.name)
-            # Convert the object's world location into the armature's local space.
             local_loc = inv_matrix @ obj.location
             bone.head = local_loc
-            bone.tail = local_loc + Vector((0, 0.5, 0))  # Slight offset to define bone length
-        
-        # Return to Object mode.
+            bone.tail = local_loc + Vector((0, 0.5, 0))
+
         bpy.ops.object.mode_set(mode='OBJECT')
 
-        # Parent each object to its corresponding bone while preserving its world transform.
+        # Parent objects to corresponding bones
         for obj in collection.objects:
             obj.parent = armature_obj
             obj.parent_type = 'BONE'
             obj.parent_bone = obj.name
-            # Calculate the bone's rest matrix in world space and invert it.
             bone_rest = armature_obj.data.bones[obj.name].matrix_local.copy()
             obj.matrix_parent_inverse = (armature_obj.matrix_world @ bone_rest).inverted()
         
-        self.report({'INFO'}, "Armature created and objects parented to corresponding bones.")
+        self.report({'INFO'}, "Armature created and objects parented to bones.")
         return {'FINISHED'}
 
 class AUTO_RIG_PT_panel(bpy.types.Panel):
@@ -78,16 +72,16 @@ class AUTO_RIG_PT_panel(bpy.types.Panel):
         scene = context.scene
 
         layout.prop(scene, "auto_rig_collection")
-        if scene.auto_rig_collection != "":
+        if scene.auto_rig_collection:
             layout.operator("object.auto_rig_operator", text="Auto Rig")
 
 def register():
     bpy.utils.register_class(AUTO_RIG_OT_operator)
     bpy.utils.register_class(AUTO_RIG_PT_panel)
-    bpy.types.Scene.auto_rig_collection = bpy.props.EnumProperty(
+    bpy.types.Scene.auto_rig_collection = bpy.props.PointerProperty(
         name="Group",
-        description="Select a collection to rig",
-        items=get_collection_items
+        type=bpy.types.Collection,
+        description="Select a collection to rig"
     )
 
 def unregister():
